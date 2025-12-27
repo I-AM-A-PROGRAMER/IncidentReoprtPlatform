@@ -128,14 +128,32 @@ function googleLogin() {
  * DASHBOARD — HERO TYPING
  *********************************************************/
 function startTyping() {
-  const text = "Saw an incident? Report now for fast-track solution";
-  let i = 0;
+  const text = "Saw an incident? Report now for fast-track solution!!";
+  let index = 0;
+  let typing = true;
+
+  typingText.innerText = "";
 
   setInterval(() => {
-    typingText.innerText = text.slice(0, i++);
-    if (i > text.length) i = 0;
+    if (typing) {
+      typingText.innerText = text.slice(0, index);
+      index++;
+
+      // Finished typing
+      if (index > text.length) {
+        typing = false;
+
+        // Pause 5 seconds before restarting
+        setTimeout(() => {
+          index = 0;
+          typingText.innerText = "";
+          typing = true;
+        }, 5000);
+      }
+    }
   }, 120);
 }
+
 
 /*********************************************************
  * MODAL CONTROLS
@@ -154,51 +172,79 @@ function closeModal() {
  * SUBMIT INCIDENT (WITH DUPLICATE CHECK)
  *********************************************************/
 async function submitIncident() {
-  modalMsg.innerText = "Submitting…";
+  modalMsg.innerText = "Submitting...";
 
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const lat = pos.coords.latitude.toFixed(3);
-    const lng = pos.coords.longitude.toFixed(3);
-    const now = Date.now();
+  const type = incidentType.value;
+  const desc = incidentDesc.value;
+  const manualAddress = incidentAddress.value.trim();
+  const file = incidentFile.files[0];
+  const now = Date.now();
 
-    // Duplicate check: same approx location + last 5 minutes
+  if (!desc) {
+    modalMsg.innerText = "Please describe the incident";
+    return;
+  }
+
+  let lat = null;
+  let lng = null;
+  let locationText = manualAddress || "GPS location";
+
+  // Try GPS, but DO NOT BLOCK if it fails
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      lat = pos.coords.latitude.toFixed(4);
+      lng = pos.coords.longitude.toFixed(4);
+      locationText = manualAddress || "Auto GPS";
+
+      await finalizeIncident(lat, lng, locationText, type, desc, file, now);
+    },
+    async () => {
+      // GPS failed — continue with manual address
+      await finalizeIncident(null, null, locationText, type, desc, file, now);
+    },
+    { timeout: 5000 }
+  );
+}
+async function finalizeIncident(lat, lng, locationText, type, desc, file, time) {
+  // Duplicate check only if GPS exists
+  if (lat && lng) {
     const dupes = await db.collection("incidents")
       .where("lat", "==", lat)
       .where("lng", "==", lng)
-      .where("time", ">", now - 5 * 60 * 1000)
+      .where("time", ">", time - 5 * 60 * 1000)
       .get();
 
     if (!dupes.empty) {
       modalMsg.innerText =
-        "A report was already submitted nearby in the last 5 minutes.";
+        "A similar incident was already reported nearby in the last 5 minutes.";
       return;
     }
+  }
 
-    let mediaURL = null;
-    const file = incidentFile.files[0];
+  let mediaURL = null;
 
-    if (file) {
-      const ref = storage.ref(`media/${Date.now()}_${file.name}`);
-      await ref.put(file);
-      mediaURL = await ref.getDownloadURL();
-    }
+  if (file) {
+    const ref = storage.ref(`media/${Date.now()}_${file.name}`);
+    await ref.put(file);
+    mediaURL = await ref.getDownloadURL();
+  }
 
-    await db.collection("incidents").add({
-      type: incidentType.value,
-      desc: incidentDesc.value,
-      lat,
-      lng,
-      location: "Auto-detected",
-      media: mediaURL,
-      time: now,
-      status: "Pending",
-      verified: "Not Verified"
-    });
-
-    modalMsg.innerText = "Submitted successfully";
-    setTimeout(closeModal, 700);
+  await db.collection("incidents").add({
+    type,
+    desc,
+    location: locationText,
+    lat,
+    lng,
+    media: mediaURL,
+    time,
+    status: "Pending",
+    verified: "Not Verified"
   });
+
+  modalMsg.innerText = "Submitted successfully";
+  setTimeout(closeModal, 800);
 }
+
 
 /*********************************************************
  * REALTIME LISTENERS — USER
@@ -305,4 +351,5 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
