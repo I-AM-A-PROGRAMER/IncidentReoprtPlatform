@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Incident Platform – Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+</head>
+
+<body>
+
+<!-- Animated background -->
+<div class="login-bg"></div>
+
+<!-- LOGIN / SIGNUP -->
+<div class="login-wrapper">
+  <div class="login-card">
+
+    <h1>Incident Platform</h1>
+    <p class="subtitle">Real-time incident reporting & response coordination</p>
+
+    <!-- Tabs -->
+    <div class="login-tabs">
+      <button id="loginTab" class="tab active" onclick="switchTab('login')">Login</button>
+      <button id="signupTab" class="tab" onclick="switchTab('signup')">Signup</button>
+    </div>
+
+    <!-- Forms -->
+    <div class="form-container">
+
+      <!-- LOGIN -->
+      <div id="loginForm" class="form active">
+        <input id="loginEmail" type="email" placeholder="Email" />
+        <input id="loginPassword" type="password" placeholder="Password" />
+
+        <button class="btn primary" onclick="login()">Login</button>
+
+        <div class="or">OR</div>
+
+        <button class="btn google" onclick="googleLogin()">Continue with Google</button>
+      </div>
+
+      <!-- SIGNUP -->
+      <div id="signupForm" class="form">
+        <input id="signupName" type="text" placeholder="Full Name" />
+        <input id="signupEmail" type="email" placeholder="Email" />
+        <input id="signupPassword" type="password" placeholder="Password" />
+
+        <button class="btn primary" onclick="signup()">Create Account</button>
+      </div>
+
+    </div>
+
+    <p id="msg" class="msg"></p>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
