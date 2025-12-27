@@ -217,7 +217,7 @@ async function finalizeIncident(type, desc, state, city, address, file, time) {
       //const ref = storage.ref(`media/${Date.now()}_${file.name}`);
       //await ref.put(file);
       //mediaURL = await ref.getDownloadURL();
-    }
+    //}
 
     // Firestore write
     await db.collection("incidents").add({
@@ -351,6 +351,7 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
 
 
