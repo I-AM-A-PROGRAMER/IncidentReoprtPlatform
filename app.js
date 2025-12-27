@@ -192,51 +192,58 @@ async function submitIncident() {
 }
 
 async function finalizeIncident(type, desc, state, city, address, file, time) {
+  try {
+    //Duplicate check
+    const fiveMinAgo = firebase.firestore.Timestamp.fromMillis(
+      time.toMillis() - 5 * 60 * 1000
+    );
 
-  // Duplicate check (same type + city in last 5 min)
-  const fiveMinAgo = firebase.firestore.Timestamp.fromMillis(
-    time.toMillis() - 5 * 60 * 1000
-  );
+    const dupes = await db.collection("incidents")
+      .where("type", "==", type)
+      .where("city", "==", city)
+      .where("time", ">", fiveMinAgo)
+      .get();
 
-  const dupes = await db.collection("incidents")
-    .where("type", "==", type)
-    .where("city", "==", city)
-    .where("time", ">", fiveMinAgo)
-    .get();
+    if (!dupes.empty) {
+      modalMsg.innerText =
+        "A similar incident was reported here recently.";
+      return;
+    }
 
-  if (!dupes.empty) {
-    modalMsg.innerText =
-      "A similar incident was reported here recently.";
-    return;
+    // Media upload (OPTIONAL, SAFE)
+    let mediaURL = null;
+
+    if (file) {
+      const ref = storage.ref(`media/${Date.now()}_${file.name}`);
+      await ref.put(file);
+      mediaURL = await ref.getDownloadURL();
+    }
+
+    // Firestore write
+    await db.collection("incidents").add({
+      type,
+      desc,
+      state,
+      city,
+      address,
+      media: mediaURL,
+      time,
+      status: "Pending",
+      verified: "Not Verified",
+      uid: auth.currentUser.uid
+    });
+
+    modalMsg.innerText = "Submitted successfully";
+    showToast("Incident reported", "success");
+    setTimeout(closeModal, 800);
+
+  } catch (err) {
+    console.error("SUBMIT ERROR:", err);
+    modalMsg.innerText = "Submission failed. Check console.";
+    showToast("Submission failed", "error");
   }
-
-  // Media upload
-  let mediaURL = null;
-
-  if (file) {
-    const ref = storage.ref(`media/${Date.now()}_${file.name}`);
-    await ref.put(file);
-    mediaURL = await ref.getDownloadURL();
-  }
-
-  // Save incident
-  await db.collection("incidents").add({
-    type,
-    desc,
-    state,
-    city,
-    address,
-    media: mediaURL,
-    time,
-    status: "Pending",
-    verified: "Not Verified",
-    uid: auth.currentUser.uid
-  });
-
-  modalMsg.innerText = "Submitted successfully";
-  showToast("Incident reported", "success");
-  setTimeout(closeModal, 800);
 }
+
 
 
 /*********************************************************
@@ -344,6 +351,7 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
 
 
