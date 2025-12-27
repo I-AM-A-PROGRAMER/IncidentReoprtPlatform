@@ -213,10 +213,10 @@ async function finalizeIncident(type, desc, state, city, address, file, time) {
     // Media upload (OPTIONAL, SAFE)
     let mediaURL = null;
 
-    if (file) {
-      const ref = storage.ref(`media/${Date.now()}_${file.name}`);
-      await ref.put(file);
-      mediaURL = await ref.getDownloadURL();
+    //if (file) {
+      //const ref = storage.ref(`media/${Date.now()}_${file.name}`);
+      //await ref.put(file);
+      //mediaURL = await ref.getDownloadURL();
     }
 
     // Firestore write
@@ -351,6 +351,7 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
 
 
