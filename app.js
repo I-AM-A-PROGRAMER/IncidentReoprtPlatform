@@ -33,9 +33,10 @@ const isDashboardPage = document.getElementById("userDashboard") !== null;
  * AUTH STATE — THIS IS THE LOGIN → DASHBOARD LINK
  *********************************************************/
 auth.onAuthStateChanged(user => {
+
   if (isLoginPage) {
     // On login page
-    if (user && user.emailVerified) {
+    if (user) {
       window.location.href = "dashboard.html";
     }
   }
@@ -63,6 +64,7 @@ auth.onAuthStateChanged(user => {
       listenUser();
     }
   }
+
 });
 
 /*********************************************************
@@ -303,3 +305,4 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
