@@ -175,52 +175,42 @@ async function submitIncident() {
   modalMsg.innerText = "Submitting...";
 
   const type = incidentType.value;
-  const desc = incidentDesc.value;
-  const manualAddress = incidentAddress.value.trim();
+  const desc = incidentDesc.value.trim();
+  const state = incidentState.value;
+  const city = incidentCity.value.trim();
+  const address = incidentAddress.value.trim();
   const file = incidentFile.files[0];
-  const now = Date.now();
 
-  if (!desc) {
-    modalMsg.innerText = "Please describe the incident";
+  if (!type || !desc || !state || !city || !address) {
+    modalMsg.innerText = "Please fill all fields";
     return;
   }
 
-  let lat = null;
-  let lng = null;
-  let locationText = manualAddress || "GPS location";
+  const time = firebase.firestore.Timestamp.now();
 
-  // Try GPS, but DO NOT BLOCK if it fails
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      lat = pos.coords.latitude.toFixed(4);
-      lng = pos.coords.longitude.toFixed(4);
-      locationText = manualAddress || "Auto GPS";
-
-      await finalizeIncident(lat, lng, locationText, type, desc, file, now);
-    },
-    async () => {
-      // GPS failed — continue with manual address
-      await finalizeIncident(null, null, locationText, type, desc, file, now);
-    },
-    { timeout: 5000 }
-  );
+  await finalizeIncident(type, desc, state, city, address, file, time);
 }
-async function finalizeIncident(lat, lng, locationText, type, desc, file, time) {
-  // Duplicate check only if GPS exists
-  if (lat && lng) {
-    const dupes = await db.collection("incidents")
-      .where("lat", "==", lat)
-      .where("lng", "==", lng)
-      .where("time", ">", time - 5 * 60 * 1000)
-      .get();
 
-    if (!dupes.empty) {
-      modalMsg.innerText =
-        "A similar incident was already reported nearby in the last 5 minutes.";
-      return;
-    }
+async function finalizeIncident(type, desc, state, city, address, file, time) {
+
+  // Duplicate check (same type + city in last 5 min)
+  const fiveMinAgo = firebase.firestore.Timestamp.fromMillis(
+    time.toMillis() - 5 * 60 * 1000
+  );
+
+  const dupes = await db.collection("incidents")
+    .where("type", "==", type)
+    .where("city", "==", city)
+    .where("time", ">", fiveMinAgo)
+    .get();
+
+  if (!dupes.empty) {
+    modalMsg.innerText =
+      "A similar incident was reported here recently.";
+    return;
   }
 
+  // Media upload
   let mediaURL = null;
 
   if (file) {
@@ -229,19 +219,22 @@ async function finalizeIncident(lat, lng, locationText, type, desc, file, time) 
     mediaURL = await ref.getDownloadURL();
   }
 
+  // Save incident
   await db.collection("incidents").add({
     type,
     desc,
-    location: locationText,
-    lat,
-    lng,
+    state,
+    city,
+    address,
     media: mediaURL,
     time,
     status: "Pending",
-    verified: "Not Verified"
+    verified: "Not Verified",
+    uid: auth.currentUser.uid
   });
 
   modalMsg.innerText = "Submitted successfully";
+  showToast("Incident reported", "success");
   setTimeout(closeModal, 800);
 }
 
@@ -351,5 +344,6 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
 
