@@ -1,6 +1,34 @@
-/*********************************************************
- * FIREBASE INIT — REPLACE WITH YOUR OWN KEYS
- *********************************************************/
+/***********************
+ * FIREBASE SETUP
+ ***********************/
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  updateDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+/********* CONFIG *********/
 const firebaseConfig = {
   apiKey: "AIzaSyAzWMhMAU09WjOboL5SnEcEMD7FSrJK2Mc",
   authDomain: "authentication-f62b4.firebaseapp.com",
@@ -10,34 +38,81 @@ const firebaseConfig = {
   appId: "1:461551814952:web:a2132a5f306c7452cca81d"
 };
 
-firebase.initializeApp(firebaseConfig);
+const ADMIN_EMAILS = ["admin@gmail.com"]; // ADD YOUR ADMIN MAILS
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+/********* INIT *********/
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-/**************************************************
- * ADMIN CONFIG
- **************************************************/
-const ADMIN_EMAILS = [
-  "admin@gmail.com"
-];
+/***********************
+ * UTILITIES
+ ***********************/
+function toast(msg, type = "success") {
+  const t = document.createElement("div");
+  t.className = `toast ${type}`;
+  t.innerText = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add("show"), 10);
+  setTimeout(() => {
+    t.classList.remove("show");
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
+}
 
-/**************************************************
- * PAGE DETECTION
- **************************************************/
-const isLoginPage = window.location.pathname.includes("index.html") ||
-                    window.location.pathname.endsWith("/");
-const isDashboardPage = window.location.pathname.includes("dashboard.html");
+/***********************
+ * AUTH (LOGIN / SIGNUP)
+ ***********************/
+window.loginEmail = async () => {
+  const email = emailInput.value;
+  const pass = passwordInput.value;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    toast("Login successful");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+};
 
-/**************************************************
- * AUTH STATE HANDLER
- **************************************************/
-auth.onAuthStateChanged(user => {
-  if (isLoginPage && user) {
+window.signupEmail = async () => {
+  const email = emailInput.value;
+  const pass = passwordInput.value;
+  try {
+    await createUserWithEmailAndPassword(auth, email, pass);
+    toast("Account created");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+};
+
+window.googleLogin = async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+    toast("Logged in with Google");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+};
+
+window.logout = async () => {
+  await signOut(auth);
+  window.location.href = "index.html";
+};
+
+/***********************
+ * AUTH STATE
+ ***********************/
+onAuthStateChanged(auth, user => {
+  const page = document.body.dataset.page;
+
+  if (page === "login" && user) {
     window.location.href = "dashboard.html";
+    return;
   }
 
-  if (isDashboardPage) {
+  if (page === "dashboard") {
     if (!user) {
       window.location.href = "index.html";
       return;
@@ -45,232 +120,131 @@ auth.onAuthStateChanged(user => {
 
     const isAdmin = ADMIN_EMAILS.includes(user.email);
     document.getElementById("userWelcome").innerText =
-      `Hi, ${user.email.split("@")[0]}`;
+      "Hi, " + user.email.split("@")[0];
 
     if (isAdmin) {
-      document.getElementById("adminDashboard").classList.remove("hidden");
-      document.getElementById("userDashboard").classList.add("hidden");
-      listenAdmin();
-    } else {
-      document.getElementById("userDashboard").classList.remove("hidden");
-      document.getElementById("adminDashboard").classList.add("hidden");
-      listenUser();
-      startHeroTyping();
+      document.getElementById("adminPanel").classList.remove("hidden");
     }
+
+    startHeroTyping();
+    listenIncidents(isAdmin);
   }
 });
 
-/**************************************************
- * LOGIN / SIGNUP
- **************************************************/
-function loginEmail() {
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
+/***********************
+ * HERO TYPING
+ ***********************/
+const HERO_TEXT = "Saw an incident? Report now for fast-track solution";
 
-  auth.signInWithEmailAndPassword(email, pass)
-    .catch(err => showToast(err.message, "error"));
+async function startHeroTyping() {
+  const el = document.getElementById("heroTypingText");
+  if (!el) return;
+
+  while (true) {
+    el.innerText = "";
+    for (let c of HERO_TEXT) {
+      el.innerText += c;
+      await sleep(50);
+    }
+    await sleep(5000);
+  }
 }
 
-function signupEmail() {
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
-
-  auth.createUserWithEmailAndPassword(email, pass)
-    .then(() => showToast("Account created", "success"))
-    .catch(err => showToast(err.message, "error"));
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
 }
 
-function loginGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider)
-    .catch(err => showToast(err.message, "error"));
-}
-
-function logout() {
-  auth.signOut();
-}
-
-/**************************************************
- * INPUT REFERENCES (CRITICAL)
- **************************************************/
-const incidentType = document.getElementById("incidentType");
-const incidentDesc = document.getElementById("incidentDesc");
-const incidentState = document.getElementById("incidentState");
-const incidentCity = document.getElementById("incidentCity");
-const incidentAddress = document.getElementById("incidentAddress");
-const incidentFile = document.getElementById("incidentFile");
-const modalMsg = document.getElementById("modalMsg");
-
-/**************************************************
- * SUBMIT INCIDENT (NO GPS, NO FREEZE)
- **************************************************/
-async function submitIncident() {
-  modalMsg.innerText = "Submitting...";
-
+/***********************
+ * REPORT INCIDENT
+ ***********************/
+window.submitIncident = async () => {
   const type = incidentType.value;
   const desc = incidentDesc.value.trim();
   const state = incidentState.value;
   const city = incidentCity.value.trim();
   const address = incidentAddress.value.trim();
+  const file = incidentFile.files[0];
 
   if (!desc || !state || !city) {
-    modalMsg.innerText = "Fill all required fields";
+    toast("Please fill required fields", "error");
     return;
   }
 
-  const time = firebase.firestore.Timestamp.now();
+  let mediaURL = null;
 
   try {
-    // DUPLICATE CHECK (5 minutes, same state + city + type)
-    const dupes = await db.collection("incidents")
-      .where("type", "==", type)
-      .where("state", "==", state)
-      .where("city", "==", city)
-      .where("time", ">", new firebase.firestore.Timestamp(
-        time.seconds - 300,
-        time.nanoseconds
-      ))
-      .get();
-
-    if (!dupes.empty) {
-      modalMsg.innerText = "Similar incident already reported recently";
-      showToast("Duplicate detected", "warning");
-      return;
+    if (file) {
+      const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      mediaURL = await getDownloadURL(storageRef);
     }
 
-    await db.collection("incidents").add({
+    await addDoc(collection(db, "incidents"), {
       type,
       desc,
       state,
       city,
       address,
-      media: null, // media disabled until storage rules added
-      time,
+      media: mediaURL,
       status: "Pending",
       verified: "Not Verified",
-      uid: auth.currentUser.uid
+      time: Date.now()
     });
 
-    modalMsg.innerText = "Submitted";
-    showToast("Incident reported", "success");
-
-    setTimeout(closeModal, 600);
-
-  } catch (err) {
-    console.error(err);
-    modalMsg.innerText = "Submission failed";
-    showToast("Submission failed", "error");
+    toast("Incident reported successfully");
+    closeModal();
+  } catch (e) {
+    toast(e.message, "error");
   }
-}
+};
 
-/**************************************************
- * USER LISTENER
- **************************************************/
-function listenUser() {
-  db.collection("incidents")
-    .orderBy("time", "desc")
-    .onSnapshot(snapshot => {
-      const tbody = document.getElementById("userTable");
-      tbody.innerHTML = "";
+/***********************
+ * LISTEN INCIDENTS
+ ***********************/
+function listenIncidents(isAdmin) {
+  const q = query(collection(db, "incidents"), orderBy("time", "desc"));
+  onSnapshot(q, snap => {
+    userTable.innerHTML = "";
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const tr = document.createElement("tr");
 
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        tbody.innerHTML += `
-          <tr>
-            <td>${d.type}</td>
-            <td>${d.desc}</td>
-            <td>
-              ${d.city}
-              <span class="dots" onclick="showLocation('${d.address}, ${d.city}, ${d.state}')">⋮</span>
-            </td>
-            <td>${new Date(d.time.seconds * 1000).toLocaleString()}</td>
-            <td><span class="badge pending">${d.status}</span></td>
-            <td><span class="badge red">${d.verified}</span></td>
-          </tr>
-        `;
-      });
+      tr.innerHTML = `
+        <td>${d.type}</td>
+        <td>${d.desc}</td>
+        <td>${d.city}</td>
+        <td>
+          ${d.media ? `<button onclick="viewMedia('${d.media}')">View</button>` : "—"}
+        </td>
+        <td>${new Date(d.time).toLocaleString()}</td>
+        <td>${d.status}</td>
+        <td>
+          ${isAdmin ? `
+            <select onchange="verifyIncident('${docSnap.id}', this.value)">
+              <option ${d.verified==="Not Verified"?"selected":""}>Not Verified</option>
+              <option ${d.verified==="Verified"?"selected":""}>Verified</option>
+            </select>` : d.verified}
+        </td>
+      `;
+      userTable.appendChild(tr);
     });
+  });
 }
 
-/**************************************************
- * ADMIN LISTENER
- **************************************************/
-function listenAdmin() {
-  db.collection("incidents")
-    .orderBy("time", "desc")
-    .onSnapshot(snapshot => {
-      const tbody = document.getElementById("adminTable");
-      tbody.innerHTML = "";
+/***********************
+ * ADMIN VERIFY
+ ***********************/
+window.verifyIncident = async (id, value) => {
+  await updateDoc(doc(db, "incidents", id), {
+    verified: value
+  });
+  toast("Verification updated");
+};
 
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        tbody.innerHTML += `
-          <tr>
-            <td>${d.type}</td>
-            <td>${d.city}</td>
-            <td>
-              <select onchange="verifyIncident('${doc.id}', this.value)">
-                <option ${d.verified==="Not Verified"?"selected":""}>Not Verified</option>
-                <option ${d.verified==="Verified"?"selected":""}>Verified</option>
-              </select>
-            </td>
-          </tr>
-        `;
-      });
-    });
-}
-
-function verifyIncident(id, value) {
-  db.collection("incidents").doc(id).update({ verified: value });
-  showToast("Verification updated", "success");
-}
-
-/**************************************************
- * UI HELPERS
- **************************************************/
-function showLocation(text) {
-  showToast(text, "info", 4000);
-}
-
-function openModal() {
-  document.getElementById("modal").classList.add("show");
-}
-
-function closeModal() {
-  document.getElementById("modal").classList.remove("show");
-  modalMsg.innerText = "";
-}
-
-/**************************************************
- * HERO TYPING (5s HOLD)
- **************************************************/
-function startHeroTyping() {
-  const el = document.getElementById("heroText");
-  const text = "Saw an incident? Report now for fast-track solution";
-  let i = 0;
-
-  function type() {
-    if (i < text.length) {
-      el.innerText += text.charAt(i++);
-      setTimeout(type, 70);
-    } else {
-      setTimeout(() => {
-        el.innerText = "";
-        i = 0;
-        type();
-      }, 5000);
-    }
-  }
-  type();
-}
-
-/**************************************************
- * TOAST SYSTEM
- **************************************************/
-function showToast(msg, type="info", time=2500) {
-  const t = document.createElement("div");
-  t.className = `toast ${type}`;
-  t.innerText = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), time);
-}
+/***********************
+ * MEDIA VIEW
+ ***********************/
+window.viewMedia = url => {
+  const w = window.open();
+  w.document.write(`<img src="${url}" style="max-width:100%">`);
+};
