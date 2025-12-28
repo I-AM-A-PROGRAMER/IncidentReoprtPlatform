@@ -182,45 +182,51 @@ async function submitIncident() {
   const address = incidentAddress.value.trim();
   const file = incidentFile.files[0];
 
-  if (!type || !desc || !state || !city || !address) {
-    modalMsg.innerText = "Please fill all fields";
+  if (!desc || !state || !city) {
+    modalMsg.innerText = "Please fill all required fields";
     return;
   }
 
   const time = firebase.firestore.Timestamp.now();
 
-  await finalizeIncident(type, desc, state, city, address, file, time);
-}
+  // HARD timeout guard (prevents infinite stuck)
+  const timeout = setTimeout(() => {
+    modalMsg.innerText = "Submission timed out";
+    showToast("Submission timeout", "error");
+  }, 15000);
 
-async function finalizeIncident(type, desc, state, city, address, file, time) {
   try {
-    //Duplicate check
-    const fiveMinAgo = firebase.firestore.Timestamp.fromMillis(
-      time.toMillis() - 5 * 60 * 1000
-    );
-
+    //DUPLICATE CHECK (manual location based)
     const dupes = await db.collection("incidents")
       .where("type", "==", type)
       .where("city", "==", city)
-      .where("time", ">", fiveMinAgo)
+      .where("state", "==", state)
+      .where("time", ">", new firebase.firestore.Timestamp(
+        time.seconds - 300,
+        time.nanoseconds
+      ))
       .get();
 
     if (!dupes.empty) {
+      clearTimeout(timeout);
       modalMsg.innerText =
-        "A similar incident was reported here recently.";
+        "Similar incident already reported here recently.";
+      showToast("Duplicate incident detected", "warning");
       return;
     }
 
-    // Media upload (OPTIONAL, SAFE)
+    // TEMP: SKIP MEDIA (THIS IS YOUR MAIN BLOCKER)
     let mediaURL = null;
 
-    //if (file) {
-      //const ref = storage.ref(`media/${Date.now()}_${file.name}`);
-      //await ref.put(file);
-      //mediaURL = await ref.getDownloadURL();
-    //}
+    /*
+    if (file) {
+      const ref = storage.ref(`media/${Date.now()}_${file.name}`);
+      await ref.put(file);
+      mediaURL = await ref.getDownloadURL();
+    }
+    */
 
-    // Firestore write
+    // FIRESTORE WRITE
     await db.collection("incidents").add({
       type,
       desc,
@@ -234,18 +240,21 @@ async function finalizeIncident(type, desc, state, city, address, file, time) {
       uid: auth.currentUser.uid
     });
 
+    clearTimeout(timeout);
     modalMsg.innerText = "Submitted successfully";
     showToast("Incident reported", "success");
-    setTimeout(closeModal, 800);
+
+    setTimeout(() => {
+      closeModal();
+    }, 600);
 
   } catch (err) {
-    console.error("SUBMIT ERROR:", err);
-    modalMsg.innerText = "Submission failed. Check console.";
+    clearTimeout(timeout);
+    console.error("SUBMIT FAILED:", err);
+    modalMsg.innerText = "Submission failed";
     showToast("Submission failed", "error");
   }
 }
-
-
 
 /*********************************************************
  * REALTIME LISTENERS — USER
@@ -352,6 +361,7 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
 
 
