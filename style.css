@@ -1,182 +1,254 @@
-/* =====================
+/* =========================
    GLOBAL RESET
-===================== */
+========================= */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
 }
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f1b4c, #6a1fbf);
+  background: linear-gradient(135deg, #0b1230, #5b21b6);
   color: #fff;
 }
 
-/* =====================
-   COMMON UTILITIES
-===================== */
+/* =========================
+   COMMON
+========================= */
 .hidden {
   display: none !important;
 }
 
 .primary-btn {
-  background: #2f6df6;
+  background: #2563eb;
+  border: none;
   color: #fff;
-  border: none;
   padding: 12px 22px;
-  border-radius: 30px;
-  font-size: 15px;
+  border-radius: 28px;
   cursor: pointer;
-}
-
-.primary-btn:hover {
-  opacity: 0.9;
-}
-
-/* =====================
-   TOP BAR
-===================== */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 32px;
-}
-
-.logout-btn {
-  background: #d93025;
-  border: none;
-  color: white;
-  padding: 10px 18px;
-  border-radius: 20px;
-  cursor: pointer;
-}
-
-/* =====================
-   CARDS
-===================== */
-.card {
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(14px);
-  border-radius: 18px;
-  padding: 26px;
-  margin: 30px auto;
-  width: 92%;
-  max-width: 1100px;
-}
-
-.hero-card {
-  text-align: center;
-}
-
-.hero-card h2 {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-
-.hero-card p {
-  opacity: 0.85;
-  margin-bottom: 18px;
-}
-
-/* =====================
-   TABLES
-===================== */
-.table-wrapper {
-  overflow-x: auto;
-  margin-top: 18px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 12px 10px;
-  text-align: left;
   font-size: 14px;
 }
 
-th {
+.secondary-btn {
+  background: #374151;
+  border: none;
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 28px;
+  cursor: pointer;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+  opacity: 0.9;
+}
+
+/* =========================
+   LOGIN PAGE
+========================= */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-card {
+  width: 360px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.auth-card h1 {
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  opacity: 0.75;
+  margin-bottom: 18px;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.auth-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: #bbb;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.auth-tabs .active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+}
+
+.google-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: #db4437;
+  color: #fff;
+  cursor: pointer;
+}
+
+.divider {
+  margin: 14px 0;
+  opacity: 0.7;
+}
+
+.auth-msg {
+  font-size: 13px;
+  margin-top: 10px;
   opacity: 0.85;
+}
+
+/* =========================
+   DASHBOARD TOP BAR
+========================= */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 30px;
+}
+
+.logout {
+  background: #dc2626;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* =========================
+   HERO CARD
+========================= */
+.hero-card {
+  width: 90%;
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 34px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 22px;
+  text-align: center;
+}
+
+.hero-card h1 {
+  font-size: 28px;
+  min-height: 40px;
+  margin-bottom: 16px;
+}
+
+/* =========================
+   CARDS
+========================= */
+.card {
+  width: 92%;
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 26px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 22px;
+}
+
+/* =========================
+   TABLES
+========================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+}
+
+thead th {
+  text-align: left;
+  padding: 10px;
+  font-size: 14px;
+  opacity: 0.8;
   border-bottom: 1px solid rgba(255,255,255,0.15);
 }
 
-td {
+tbody td {
+  padding: 12px 10px;
+  font-size: 14px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-/* =====================
+/* =========================
    ADMIN ANALYTICS
-===================== */
-.analytics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+========================= */
+.analytics {
+  display: flex;
   gap: 16px;
   margin: 20px 0;
 }
 
-.stat-card {
+.stat {
+  flex: 1;
   background: rgba(255,255,255,0.08);
+  border-radius: 16px;
   padding: 18px;
-  border-radius: 14px;
   text-align: center;
 }
 
-.stat-card span {
-  font-size: 26px;
+.stat span {
+  font-size: 28px;
   display: block;
-  margin-top: 6px;
+  margin-bottom: 4px;
 }
 
-/* =====================
-   FILTERS
-===================== */
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.filters select,
-.filters button {
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-}
-
-/* =====================
+/* =========================
    MODAL
-===================== */
+========================= */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.65);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 
-.modal-card {
+.modal-box {
+  width: 420px;
+  max-width: 92%;
   background: #0f122b;
   padding: 26px;
-  border-radius: 18px;
-  width: 95%;
-  max-width: 420px;
+  border-radius: 20px;
 }
 
-.modal-card h3 {
+.modal-box h3 {
   margin-bottom: 14px;
 }
 
-.modal-card select,
-.modal-card textarea,
-.modal-card input {
+.modal-box select,
+.modal-box textarea,
+.modal-box input {
   width: 100%;
   padding: 10px;
   margin-bottom: 12px;
@@ -184,7 +256,7 @@ td {
   border: none;
 }
 
-.modal-card textarea {
+.modal-box textarea {
   resize: none;
   height: 80px;
 }
@@ -194,85 +266,20 @@ td {
   gap: 12px;
 }
 
-.modal-actions button {
-  flex: 1;
-}
-
-#fileName {
-  font-size: 13px;
-  opacity: 0.85;
-  margin-bottom: 10px;
-}
-
-/* =====================
-   LOGIN PAGE (index.html)
-===================== */
-.login-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-.login-card {
-  background: rgba(0,0,0,0.5);
-  padding: 30px;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 380px;
-  text-align: center;
-}
-
-.login-card h1 {
-  margin-bottom: 20px;
-}
-
-.login-card input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 10px;
-  border: none;
-}
-
-.login-card button {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.login-toggle {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.login-toggle button {
-  flex: 1;
-  padding: 10px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-}
-
-.login-toggle .active {
-  background: #2f6df6;
-  color: white;
-}
-
-/* =====================
+/* =========================
    TOAST
-===================== */
+========================= */
 .toast {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #222;
-  color: white;
+  bottom: 24px;
+  right: 24px;
+  background: #1f2937;
+  color: #fff;
   padding: 12px 20px;
-  border-radius: 10px;
+  border-radius: 14px;
   opacity: 0;
   transform: translateY(20px);
-  transition: 0.3s;
+  transition: 0.3s ease;
 }
 
 .toast.show {
