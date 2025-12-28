@@ -17,7 +17,7 @@ const db = firebase.firestore();
  *************************************************/
 const ADMIN_EMAILS = [
   "supriyo3606c@gmail.com",
-  "pushkarrajbad@gmail.com"
+  "pushkarrajabad@gmail.com"
 ];
 
 const page = document.body.dataset.page;
@@ -276,3 +276,4 @@ window.deleteIncident = async id => {
     location.reload();
   }
 };
+
