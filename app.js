@@ -6,20 +6,21 @@ const firebaseConfig = {
   authDomain: "authentication-f62b4.firebaseapp.com",
   projectId: "authentication-f62b4"
 };
-
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-/*************************************************
- * CONSTANTS
- *************************************************/
 const ADMIN_EMAILS = [
   "supriyo3606c@gmail.com",
-  "pushkarrajabad@gmail.com"
+  "pushkarrajbad@gmail.com",
+  "tonypotts545@gmail.com"
+
 ];
 
+/*************************************************
+ * PAGE DETECTION
+ *************************************************/
 const page = document.body.dataset.page;
 
 /*************************************************
@@ -27,88 +28,62 @@ const page = document.body.dataset.page;
  *************************************************/
 function showToast(msg) {
   const toast = document.getElementById("toast");
+  if (!toast) return;
   toast.innerText = msg;
-  toast.classList.remove("hidden");
-  setTimeout(() => toast.classList.add("hidden"), 3000);
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3000);
 }
 
 /*************************************************
- * AUTH STATE HANDLER
+ * AUTH STATE
  *************************************************/
 auth.onAuthStateChanged(user => {
-  if (page === "login" && user) {
-    window.location.href = "dashboard.html";
-    return;
-  }
-
-  if (page === "dashboard" && !user) {
+  if (!user && page !== "login") {
     window.location.href = "index.html";
     return;
   }
 
-  if (page === "dashboard" && user) {
+  if (user && page === "login") {
+    window.location.href = "dashboard.html";
+    return;
+  }
+
+  if (user && page === "dashboard") {
     initDashboard(user);
   }
 });
 
 /*************************************************
- * LOGIN PAGE LOGIC
+ * LOGIN / SIGNUP
  *************************************************/
 if (page === "login") {
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
   const loginBtn = document.getElementById("loginBtn");
   const signupBtn = document.getElementById("signupBtn");
   const googleBtn = document.getElementById("googleBtn");
-  const authMsg = document.getElementById("authMsg");
-
-  const loginTab = document.getElementById("loginTab");
-  const signupTab = document.getElementById("signupTab");
-
-  loginTab.onclick = () => {
-    loginTab.classList.add("active");
-    signupTab.classList.remove("active");
-    loginBtn.classList.remove("hidden");
-    signupBtn.classList.add("hidden");
-  };
-
-  signupTab.onclick = () => {
-    signupTab.classList.add("active");
-    loginTab.classList.remove("active");
-    signupBtn.classList.remove("hidden");
-    loginBtn.classList.add("hidden");
-  };
 
   loginBtn.onclick = async () => {
+    const email = emailInput.value;
+    const pass = passwordInput.value;
     try {
-      await auth.signInWithEmailAndPassword(
-        emailInput.value,
-        passwordInput.value
-      );
+      await auth.signInWithEmailAndPassword(email, pass);
     } catch (e) {
-      authMsg.innerText = e.message;
+      showToast(e.message);
     }
   };
 
   signupBtn.onclick = async () => {
+    const email = emailInput.value;
+    const pass = passwordInput.value;
     try {
-      await auth.createUserWithEmailAndPassword(
-        emailInput.value,
-        passwordInput.value
-      );
-      authMsg.innerText = "Account created. Logging in...";
+      await auth.createUserWithEmailAndPassword(email, pass);
     } catch (e) {
-      authMsg.innerText = e.message;
+      showToast(e.message);
     }
   };
 
   googleBtn.onclick = async () => {
-    try {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithPopup(provider);
-    } catch (e) {
-      authMsg.innerText = e.message;
-    }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
   };
 }
 
@@ -116,37 +91,42 @@ if (page === "login") {
  * DASHBOARD INIT
  *************************************************/
 function initDashboard(user) {
-  document.getElementById("welcomeText").innerText =
-    "Hi, " + user.email.split("@")[0];
+  document.getElementById("userName").innerText =
+    user.email.split("@")[0];
 
   document.getElementById("logoutBtn").onclick = () => auth.signOut();
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
+
   if (isAdmin) {
-    document.getElementById("adminPanel").classList.remove("hidden");
+    document.getElementById("adminSection").classList.remove("hidden");
+    loadAdminData();
+  } else {
+    document.getElementById("adminSection").classList.add("hidden");
   }
 
-  startHeroTyping();
-  setupModal();
-  loadIncidents(isAdmin);
+  loadUserIncidents(user.uid);
+  initHeroTyping();
 }
 
 /*************************************************
  * HERO TYPING
  *************************************************/
-function startHeroTyping() {
+function initHeroTyping() {
   const el = document.getElementById("heroText");
-  const text = "Saw an incident? Report now for fast-track solution";
+  if (!el) return;
+
+  const text = "Saw an incident? Report now for fast response.";
   let i = 0;
 
   function type() {
-    if (i <= text.length) {
-      el.innerText = text.slice(0, i++);
+    if (i < text.length) {
+      el.innerText += text.charAt(i++);
       setTimeout(type, 60);
     } else {
       setTimeout(() => {
-        i = 0;
         el.innerText = "";
+        i = 0;
         type();
       }, 5000);
     }
@@ -155,125 +135,121 @@ function startHeroTyping() {
 }
 
 /*************************************************
- * MODAL LOGIC
+ * INCIDENT SUBMISSION (NO FILE UPLOAD)
  *************************************************/
-function setupModal() {
-  const modal = document.getElementById("reportModal");
-  const openBtn = document.getElementById("openReportBtn");
-  const closeBtn = document.getElementById("closeModalBtn");
-  const submitBtn = document.getElementById("submitIncidentBtn");
-  const fileInput = document.getElementById("incidentFile");
-  const filePreview = document.getElementById("fileNamePreview");
+const openBtn = document.getElementById("openModalBtn");
+const modal = document.getElementById("modal");
+const submitBtn = document.getElementById("submitIncident");
 
-  openBtn.onclick = () => modal.classList.remove("hidden");
-  closeBtn.onclick = () => modal.classList.add("hidden");
+if (openBtn) openBtn.onclick = () => modal.classList.remove("hidden");
+if (document.getElementById("closeModal"))
+  document.getElementById("closeModal").onclick = () => modal.classList.add("hidden");
 
-  fileInput.onchange = () => {
-    filePreview.innerText = fileInput.files[0]
-      ? "Selected: " + fileInput.files[0].name
-      : "";
-  };
+if (submitBtn)
+  submitBtn.onclick = async () => {
+    const type = incidentType.value;
+    const desc = incidentDesc.value;
+    const state = incidentState.value;
+    const city = incidentCity.value;
+    const address = incidentAddress.value;
+    const file = incidentFile.files[0];
 
-  submitBtn.onclick = submitIncident;
-}
+    if (!desc || !city) {
+      showToast("Please fill required fields");
+      return;
+    }
 
-/*************************************************
- * SUBMIT INCIDENT (WORKING)
- *************************************************/
-async function submitIncident() {
-  const type = incidentType.value;
-  const desc = incidentDesc.value.trim();
-  const state = incidentState.value;
-  const city = incidentCity.value.trim();
-  const location = incidentLocation.value.trim();
-  const file = incidentFile.files[0];
+    const user = auth.currentUser;
 
-  if (!desc || !state || !city || !location) {
-    showToast("Please fill all fields");
-    return;
-  }
-
-  try {
     await db.collection("incidents").add({
+      uid: user.uid,
+      user: user.email,
       type,
       desc,
       state,
       city,
-      location,
-      mediaName: file ? file.name : null,
-      status: "Pending",
+      address,
+      media: file ? file.name : "No file",
+      time: Date.now(),
+      status: "Open",
       verified: false,
-      time: Date.now()
     });
 
-    showToast("Incident submitted");
-    reportModal.classList.add("hidden");
-  } catch (e) {
-    showToast("Submission failed");
-  }
-}
+    modal.classList.add("hidden");
+    showToast("Incident reported");
+  };
 
 /*************************************************
- * LOAD INCIDENTS
+ * LOAD USER INCIDENTS
  *************************************************/
-async function loadIncidents(isAdmin) {
-  const userTable = document.getElementById("incidentTable");
-  const adminTable = document.getElementById("adminTable");
-
-  const snap = await db
-    .collection("incidents")
+function loadUserIncidents(uid) {
+  db.collection("incidents")
+    .where("uid", "==", uid)
     .orderBy("time", "desc")
-    .get();
+    .onSnapshot(snap => {
+      const tbody = document.getElementById("userTable");
+      tbody.innerHTML = "";
 
-  snap.forEach(doc => {
-    const d = doc.data();
-
-    // USER ROW
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${d.type}</td>
-      <td>${d.desc}</td>
-      <td>${d.city}</td>
-      <td>${d.mediaName || "-"}</td>
-      <td>${new Date(d.time).toLocaleString()}</td>
-      <td>${d.status}</td>
-      <td>${d.verified ? "Yes" : "No"}</td>
-    `;
-    userTable.appendChild(tr);
-
-    // ADMIN ROW
-    if (isAdmin) {
-      const trA = document.createElement("tr");
-      trA.innerHTML = `
-        <td>${d.type}</td>
-        <td>${d.desc}</td>
-        <td>${d.city}</td>
-        <td>${d.status}</td>
-        <td>${d.verified ? "Yes" : "No"}</td>
-        <td>
-          <button onclick="verifyIncident('${doc.id}')">Verify</button>
-          <button onclick="resolveIncident('${doc.id}')">Resolve</button>
-          <button onclick="deleteIncident('${doc.id}')">Delete</button>
-        </td>
-      `;
-      adminTable.appendChild(trA);
-    }
-  });
+      snap.forEach(doc => {
+        const d = doc.data();
+        tbody.innerHTML += `
+          <tr>
+            <td>${d.type}</td>
+            <td>${d.desc}</td>
+            <td>${d.city}</td>
+            <td>${d.media}</td>
+            <td>${new Date(d.time).toLocaleString()}</td>
+            <td>${d.status}</td>
+            <td>${d.verified ? "Yes" : "No"}</td>
+          </tr>`;
+      });
+    });
 }
 
 /*************************************************
- * ADMIN ACTIONS
+ * ADMIN FUNCTIONS
  *************************************************/
-window.verifyIncident = id =>
+function loadAdminData() {
+  db.collection("incidents")
+    .orderBy("time", "desc")
+    .onSnapshot(snap => {
+      const tbody = document.getElementById("adminTable");
+      tbody.innerHTML = "";
+
+      let total = 0, open = 0, resolved = 0;
+
+      snap.forEach(doc => {
+        total++;
+        const d = doc.data();
+        if (d.status === "Open") open++;
+        if (d.status === "Resolved") resolved++;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${d.user}</td>
+            <td>${d.type}</td>
+            <td>${d.city}</td>
+            <td>${d.desc}</td>
+            <td>${d.status}</td>
+            <td>
+              <button onclick="verify('${doc.id}')">Verify</button>
+              <button onclick="resolve('${doc.id}')">Resolve</button>
+              <button onclick="removeIncident('${doc.id}')">Delete</button>
+            </td>
+          </tr>`;
+      });
+
+      document.getElementById("totalCount").innerText = total;
+      document.getElementById("openCount").innerText = open;
+      document.getElementById("resolvedCount").innerText = resolved;
+    });
+}
+
+window.verify = id =>
   db.collection("incidents").doc(id).update({ verified: true });
 
-window.resolveIncident = id =>
+window.resolve = id =>
   db.collection("incidents").doc(id).update({ status: "Resolved" });
 
-window.deleteIncident = async id => {
-  if (confirm("Delete this incident?")) {
-    await db.collection("incidents").doc(id).delete();
-    location.reload();
-  }
-};
-
+window.removeIncident = id =>
+  db.collection("incidents").doc(id).delete();
