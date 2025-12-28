@@ -17,86 +17,43 @@
 
   <!-- Background -->
   <div class="auth-bg"></div>
-
-  <!-- Auth Card -->
   <div class="auth-card">
+  <h1>Incident Platform</h1>
 
-    <!-- Title -->
-    <h1 class="app-title">Incident Platform</h1>
-    <p class="app-subtitle">
-      <span id="heroText"></span>
-    </p>
-
-    <!-- Tabs -->
-    <div class="auth-tabs">
-      <button id="loginTab" class="tab active">Login</button>
-      <button id="signupTab" class="tab">Signup</button>
-    </div>
-
-    <!-- LOGIN FORM -->
-    <form id="loginForm" class="auth-form active">
-      <input
-        type="email"
-        id="loginEmail"
-        placeholder="Email"
-        autocomplete="email"
-        required
-      />
-      <input
-        type="password"
-        id="loginPassword"
-        placeholder="Password"
-        autocomplete="current-password"
-        required
-      />
-
-      <button type="submit" class="primary-btn">
-        Login
-      </button>
-
-      <div class="divider">OR</div>
-
-      <button type="button" id="googleLoginBtn" class="google-btn">
-        Continue with Google
-      </button>
-    </form>
-
-    <!-- SIGNUP FORM -->
-    <form id="signupForm" class="auth-form">
-      <input
-        type="text"
-        id="signupName"
-        placeholder="Full Name"
-        autocomplete="name"
-        required
-      />
-      <input
-        type="email"
-        id="signupEmail"
-        placeholder="Email"
-        autocomplete="email"
-        required
-      />
-      <input
-        type="password"
-        id="signupPassword"
-        placeholder="Password"
-        autocomplete="new-password"
-        required
-      />
-
-      <button type="submit" class="primary-btn">
-        Create Account
-      </button>
-    </form>
-
-    <!-- Message -->
-    <p id="authMessage" class="auth-message"></p>
-
+  <!-- Tabs -->
+  <div class="auth-tabs">
+    <button id="loginTab" class="active">Login</button>
+    <button id="signupTab">Signup</button>
   </div>
+
+  <!-- LOGIN FORM -->
+  <form id="loginForm" class="auth-form active">
+    <input id="loginEmail" type="email" placeholder="Email" required />
+    <input id="loginPassword" type="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+
+  <!-- SIGNUP FORM -->
+  <form id="signupForm" class="auth-form">
+    <input id="signupEmail" type="email" placeholder="Email" required />
+    <input id="signupPassword" type="password" placeholder="Password" required />
+    <button type="submit">Create Account</button>
+  </form>
+
+  <div class="divider">OR</div>
+
+  <!-- GOOGLE LOGIN -->
+  <button id="googleLoginBtn" class="google-btn">
+    Continue with Google
+  </button>
+
+  <p id="authMessage" class="auth-msg"></p>
+</div>
+
 
   <!-- App Logic -->
   <script src="app.js"></script>
 
 </body>
 </html>
+
