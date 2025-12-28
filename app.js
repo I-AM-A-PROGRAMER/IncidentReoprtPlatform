@@ -1,112 +1,125 @@
-// ================= FIREBASE INIT =================
+/*************************************************
+ * FIREBASE INIT (REPLACE WITH YOUR REAL KEYS)
+ *************************************************/
 const firebaseConfig = {
   apiKey: "AIzaSyAzWMhMAU09WjOboL5SnEcEMD7FSrJK2Mc",
   authDomain: "authentication-f62b4.firebaseapp.com",
-  projectId: "authentication-f62b4",
-  messagingSenderId: "461551814952",
-  appId: "1:461551814952:web:a2132a5f306c7452cca81d"
+  projectId: "authentication-f62b4"
 };
+
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+/*************************************************
+ * CONSTANTS
+ *************************************************/
 const ADMIN_EMAILS = [
   "supriyo3606c@gmail.com",
   "pushkarrajbad@gmail.com"
 ];
 
+const page = document.body.dataset.page;
 
-/***********************
-  PAGE DETECTION
-************************/
-const isLoginPage = document.body.dataset.page === "login";
-const isDashboardPage = document.body.dataset.page === "dashboard";
-
-/***********************
-  TOAST
-************************/
+/*************************************************
+ * TOAST
+ *************************************************/
 function showToast(msg) {
-  const t = document.createElement("div");
-  t.className = "toast";
-  t.innerText = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.classList.remove("hidden");
+  setTimeout(() => toast.classList.add("hidden"), 3000);
 }
 
-/***********************
-  AUTH STATE
-************************/
+/*************************************************
+ * AUTH STATE HANDLER
+ *************************************************/
 auth.onAuthStateChanged(user => {
-  if (isLoginPage && user) {
+  if (page === "login" && user) {
     window.location.href = "dashboard.html";
+    return;
   }
 
-  if (isDashboardPage && !user) {
+  if (page === "dashboard" && !user) {
     window.location.href = "index.html";
+    return;
   }
 
-  if (isDashboardPage && user) {
+  if (page === "dashboard" && user) {
     initDashboard(user);
   }
 });
 
-/***********************
-  LOGIN / SIGNUP
-************************/
-if (isLoginPage) {
-  window.login = () => {
-    const email = emailInput.value;
-    const pass = passwordInput.value;
-    auth.signInWithEmailAndPassword(email, pass)
-      .catch(e => showToast(e.message));
+/*************************************************
+ * LOGIN PAGE LOGIC
+ *************************************************/
+if (page === "login") {
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const loginBtn = document.getElementById("loginBtn");
+  const signupBtn = document.getElementById("signupBtn");
+  const googleBtn = document.getElementById("googleBtn");
+  const authMsg = document.getElementById("authMsg");
+
+  const loginTab = document.getElementById("loginTab");
+  const signupTab = document.getElementById("signupTab");
+
+  loginTab.onclick = () => {
+    loginTab.classList.add("active");
+    signupTab.classList.remove("active");
+    loginBtn.classList.remove("hidden");
+    signupBtn.classList.add("hidden");
   };
 
-  window.signup = () => {
-    const email = emailInput.value;
-    const pass = passwordInput.value;
-    auth.createUserWithEmailAndPassword(email, pass)
-      .then(() => showToast("Account created"))
-      .catch(e => showToast(e.message));
+  signupTab.onclick = () => {
+    signupTab.classList.add("active");
+    loginTab.classList.remove("active");
+    signupBtn.classList.remove("hidden");
+    loginBtn.classList.add("hidden");
   };
 
-  window.googleLogin = () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-      .catch(e => showToast(e.message));
-  };
-}
-
-/***********************
-  HERO TYPING
-************************/
-function startHeroTyping() {
-  const hero = document.getElementById("heroText");
-  if (!hero) return;
-
-  const text = "Saw an incident? Report now for fast-track solution";
-  let i = 0;
-
-  function type() {
-    if (i <= text.length) {
-      hero.innerText = text.slice(0, i++);
-      setTimeout(type, 60);
-    } else {
-      setTimeout(() => {
-        i = 0;
-        hero.innerText = "";
-        type();
-      }, 5000);
+  loginBtn.onclick = async () => {
+    try {
+      await auth.signInWithEmailAndPassword(
+        emailInput.value,
+        passwordInput.value
+      );
+    } catch (e) {
+      authMsg.innerText = e.message;
     }
-  }
-  type();
+  };
+
+  signupBtn.onclick = async () => {
+    try {
+      await auth.createUserWithEmailAndPassword(
+        emailInput.value,
+        passwordInput.value
+      );
+      authMsg.innerText = "Account created. Logging in...";
+    } catch (e) {
+      authMsg.innerText = e.message;
+    }
+  };
+
+  googleBtn.onclick = async () => {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+    } catch (e) {
+      authMsg.innerText = e.message;
+    }
+  };
 }
 
-/***********************
-  DASHBOARD INIT
-************************/
+/*************************************************
+ * DASHBOARD INIT
+ *************************************************/
 function initDashboard(user) {
-  document.getElementById("userName").innerText =
-    "Hi, " + (user.email.split("@")[0]);
+  document.getElementById("welcomeText").innerText =
+    "Hi, " + user.email.split("@")[0];
+
+  document.getElementById("logoutBtn").onclick = () => auth.signOut();
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
   if (isAdmin) {
@@ -114,105 +127,152 @@ function initDashboard(user) {
   }
 
   startHeroTyping();
-  listenIncidents(isAdmin);
+  setupModal();
+  loadIncidents(isAdmin);
 }
 
-/***********************
-  LOGOUT
-************************/
-window.logout = () => auth.signOut();
+/*************************************************
+ * HERO TYPING
+ *************************************************/
+function startHeroTyping() {
+  const el = document.getElementById("heroText");
+  const text = "Saw an incident? Report now for fast-track solution";
+  let i = 0;
 
-/***********************
-  MODAL
-************************/
-window.openModal = () =>
-  document.getElementById("incidentModal").classList.remove("hidden");
+  function type() {
+    if (i <= text.length) {
+      el.innerText = text.slice(0, i++);
+      setTimeout(type, 60);
+    } else {
+      setTimeout(() => {
+        i = 0;
+        el.innerText = "";
+        type();
+      }, 5000);
+    }
+  }
+  type();
+}
 
-window.closeModal = () =>
-  document.getElementById("incidentModal").classList.add("hidden");
+/*************************************************
+ * MODAL LOGIC
+ *************************************************/
+function setupModal() {
+  const modal = document.getElementById("reportModal");
+  const openBtn = document.getElementById("openReportBtn");
+  const closeBtn = document.getElementById("closeModalBtn");
+  const submitBtn = document.getElementById("submitIncidentBtn");
+  const fileInput = document.getElementById("incidentFile");
+  const filePreview = document.getElementById("fileNamePreview");
 
-/***********************
-  SUBMIT INCIDENT
-************************/
-window.submitIncident = async () => {
+  openBtn.onclick = () => modal.classList.remove("hidden");
+  closeBtn.onclick = () => modal.classList.add("hidden");
+
+  fileInput.onchange = () => {
+    filePreview.innerText = fileInput.files[0]
+      ? "Selected: " + fileInput.files[0].name
+      : "";
+  };
+
+  submitBtn.onclick = submitIncident;
+}
+
+/*************************************************
+ * SUBMIT INCIDENT (WORKING)
+ *************************************************/
+async function submitIncident() {
   const type = incidentType.value;
   const desc = incidentDesc.value.trim();
   const state = incidentState.value;
   const city = incidentCity.value.trim();
-  const area = incidentArea.value.trim();
+  const location = incidentLocation.value.trim();
   const file = incidentFile.files[0];
 
-  if (!desc || !city || !area) {
-    showToast("Fill all required fields");
+  if (!desc || !state || !city || !location) {
+    showToast("Please fill all fields");
     return;
   }
 
-  const fakeMedia = file ? file.name : null;
-
-  await db.collection("incidents").add({
-    type,
-    desc,
-    state,
-    city,
-    area,
-    media: fakeMedia,
-    status: "Pending",
-    verified: false,
-    time: Date.now()
-  });
-
-  showToast("Incident submitted");
-  closeModal();
-};
-
-/***********************
-  LIST INCIDENTS
-************************/
-function listenIncidents(isAdmin) {
-  db.collection("incidents")
-    .orderBy("time", "desc")
-    .onSnapshot(snap => {
-      const table = document.getElementById("incidentTable");
-      table.innerHTML = "";
-
-      snap.forEach(doc => {
-        const d = doc.data();
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>${d.type}</td>
-          <td>${d.desc}</td>
-          <td>${d.city}</td>
-          <td>${d.media || "-"}</td>
-          <td>${new Date(d.time).toLocaleString()}</td>
-          <td><span class="badge pending">${d.status}</span></td>
-          <td>${d.verified ? "Yes" : "No"}</td>
-        `;
-
-        if (isAdmin) {
-          const actions = document.createElement("td");
-          actions.innerHTML = `
-            <button onclick="verify('${doc.id}')">Verify</button>
-            <button onclick="resolve('${doc.id}')">Resolve</button>
-            <button onclick="remove('${doc.id}')">Delete</button>
-          `;
-          tr.appendChild(actions);
-        }
-
-        table.appendChild(tr);
-      });
+  try {
+    await db.collection("incidents").add({
+      type,
+      desc,
+      state,
+      city,
+      location,
+      mediaName: file ? file.name : null,
+      status: "Pending",
+      verified: false,
+      time: Date.now()
     });
+
+    showToast("Incident submitted");
+    reportModal.classList.add("hidden");
+  } catch (e) {
+    showToast("Submission failed");
+  }
 }
 
-/***********************
-  ADMIN ACTIONS
-************************/
-window.verify = id =>
+/*************************************************
+ * LOAD INCIDENTS
+ *************************************************/
+async function loadIncidents(isAdmin) {
+  const userTable = document.getElementById("incidentTable");
+  const adminTable = document.getElementById("adminTable");
+
+  const snap = await db
+    .collection("incidents")
+    .orderBy("time", "desc")
+    .get();
+
+  snap.forEach(doc => {
+    const d = doc.data();
+
+    // USER ROW
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.type}</td>
+      <td>${d.desc}</td>
+      <td>${d.city}</td>
+      <td>${d.mediaName || "-"}</td>
+      <td>${new Date(d.time).toLocaleString()}</td>
+      <td>${d.status}</td>
+      <td>${d.verified ? "Yes" : "No"}</td>
+    `;
+    userTable.appendChild(tr);
+
+    // ADMIN ROW
+    if (isAdmin) {
+      const trA = document.createElement("tr");
+      trA.innerHTML = `
+        <td>${d.type}</td>
+        <td>${d.desc}</td>
+        <td>${d.city}</td>
+        <td>${d.status}</td>
+        <td>${d.verified ? "Yes" : "No"}</td>
+        <td>
+          <button onclick="verifyIncident('${doc.id}')">Verify</button>
+          <button onclick="resolveIncident('${doc.id}')">Resolve</button>
+          <button onclick="deleteIncident('${doc.id}')">Delete</button>
+        </td>
+      `;
+      adminTable.appendChild(trA);
+    }
+  });
+}
+
+/*************************************************
+ * ADMIN ACTIONS
+ *************************************************/
+window.verifyIncident = id =>
   db.collection("incidents").doc(id).update({ verified: true });
 
-window.resolve = id =>
+window.resolveIncident = id =>
   db.collection("incidents").doc(id).update({ status: "Resolved" });
 
-window.remove = id =>
-  db.collection("incidents").doc(id).delete();
-
+window.deleteIncident = async id => {
+  if (confirm("Delete this incident?")) {
+    await db.collection("incidents").doc(id).delete();
+    location.reload();
+  }
+};
