@@ -14,43 +14,36 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
 
-/*********************************************************
+/**************************************************
  * ADMIN CONFIG
- *********************************************************/
+ **************************************************/
 const ADMIN_EMAILS = [
-  "supriyo3606c@gmail.com",
-  "pushkarrajbad@gmail.com"
+  "admin@gmail.com"
 ];
 
-/*********************************************************
+/**************************************************
  * PAGE DETECTION
- *********************************************************/
-const isLoginPage = document.getElementById("loginForm") !== null;
-const isDashboardPage = document.getElementById("userDashboard") !== null;
+ **************************************************/
+const isLoginPage = window.location.pathname.includes("index.html") ||
+                    window.location.pathname.endsWith("/");
+const isDashboardPage = window.location.pathname.includes("dashboard.html");
 
-/*********************************************************
- * AUTH STATE — THIS IS THE LOGIN → DASHBOARD LINK
- *********************************************************/
+/**************************************************
+ * AUTH STATE HANDLER
+ **************************************************/
 auth.onAuthStateChanged(user => {
-
-  if (isLoginPage) {
-    // On login page
-    if (user) {
-      window.location.href = "dashboard.html";
-    }
+  if (isLoginPage && user) {
+    window.location.href = "dashboard.html";
   }
 
   if (isDashboardPage) {
-    // On dashboard page
     if (!user) {
       window.location.href = "index.html";
       return;
     }
 
     const isAdmin = ADMIN_EMAILS.includes(user.email);
-
     document.getElementById("userWelcome").innerText =
       `Hi, ${user.email.split("@")[0]}`;
 
@@ -61,117 +54,56 @@ auth.onAuthStateChanged(user => {
     } else {
       document.getElementById("userDashboard").classList.remove("hidden");
       document.getElementById("adminDashboard").classList.add("hidden");
-      startTyping();
       listenUser();
+      startHeroTyping();
     }
   }
-
 });
 
-/*********************************************************
- * LOGIN PAGE LOGIC
- *********************************************************/
-function switchTab(tab) {
-  loginForm.classList.remove("active");
-  signupForm.classList.remove("active");
-  loginTab.classList.remove("active");
-  signupTab.classList.remove("active");
+/**************************************************
+ * LOGIN / SIGNUP
+ **************************************************/
+function loginEmail() {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
 
-  if (tab === "login") {
-    loginForm.classList.add("active");
-    loginTab.classList.add("active");
-  } else {
-    signupForm.classList.add("active");
-    signupTab.classList.add("active");
-  }
-
-  msg.innerText = "";
+  auth.signInWithEmailAndPassword(email, pass)
+    .catch(err => showToast(err.message, "error"));
 }
 
-function signup() {
-  const email = signupEmail.value.trim();
-  const password = signupPassword.value.trim();
+function signupEmail() {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
 
-  if (!email || !password) {
-    msg.innerText = "Please fill all fields";
-    return;
-  }
-
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(res => {
-      res.user.sendEmailVerification();
-      msg.innerText = "Verification email sent. Verify before login.";
-      switchTab("login");
-    })
-    .catch(err => msg.innerText = err.message);
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(() => showToast("Account created", "success"))
+    .catch(err => showToast(err.message, "error"));
 }
 
-function login() {
-  const email = loginEmail.value.trim();
-  const password = loginPassword.value.trim();
-
-  if (!email || !password) {
-    msg.innerText = "Enter email and password";
-    return;
-  }
-
-  auth.signInWithEmailAndPassword(email, password)
-    .catch(err => msg.innerText = err.message);
-}
-
-function googleLogin() {
+function loginGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
-    .catch(err => msg.innerText = err.message);
+    .catch(err => showToast(err.message, "error"));
 }
 
-/*********************************************************
- * DASHBOARD — HERO TYPING
- *********************************************************/
-function startTyping() {
-  const text = "Saw an incident? Report now for fast-track solution!!";
-  let index = 0;
-  let typing = true;
-
-  typingText.innerText = "";
-
-  setInterval(() => {
-    if (typing) {
-      typingText.innerText = text.slice(0, index);
-      index++;
-
-      // Finished typing
-      if (index > text.length) {
-        typing = false;
-
-        // Pause 5 seconds before restarting
-        setTimeout(() => {
-          index = 0;
-          typingText.innerText = "";
-          typing = true;
-        }, 5000);
-      }
-    }
-  }, 120);
+function logout() {
+  auth.signOut();
 }
 
+/**************************************************
+ * INPUT REFERENCES (CRITICAL)
+ **************************************************/
+const incidentType = document.getElementById("incidentType");
+const incidentDesc = document.getElementById("incidentDesc");
+const incidentState = document.getElementById("incidentState");
+const incidentCity = document.getElementById("incidentCity");
+const incidentAddress = document.getElementById("incidentAddress");
+const incidentFile = document.getElementById("incidentFile");
+const modalMsg = document.getElementById("modalMsg");
 
-/*********************************************************
- * MODAL CONTROLS
- *********************************************************/
-function openModal() {
-  modal.style.display = "flex";
-  modalMsg.innerText = "";
-}
-
-function closeModal() {
-  modal.style.display = "none";
-  modalMsg.innerText = "";
-}
-
-/*********************************************************
- * SUBMIT INCIDENT (WITH DUPLICATE CHECK)
- *********************************************************/
+/**************************************************
+ * SUBMIT INCIDENT (NO GPS, NO FREEZE)
+ **************************************************/
 async function submitIncident() {
   modalMsg.innerText = "Submitting...";
 
@@ -180,27 +112,20 @@ async function submitIncident() {
   const state = incidentState.value;
   const city = incidentCity.value.trim();
   const address = incidentAddress.value.trim();
-  const file = incidentFile.files[0];
 
   if (!desc || !state || !city) {
-    modalMsg.innerText = "Please fill all required fields";
+    modalMsg.innerText = "Fill all required fields";
     return;
   }
 
   const time = firebase.firestore.Timestamp.now();
 
-  // HARD timeout guard (prevents infinite stuck)
-  const timeout = setTimeout(() => {
-    modalMsg.innerText = "Submission timed out";
-    showToast("Submission timeout", "error");
-  }, 15000);
-
   try {
-    //DUPLICATE CHECK (manual location based)
+    // DUPLICATE CHECK (5 minutes, same state + city + type)
     const dupes = await db.collection("incidents")
       .where("type", "==", type)
-      .where("city", "==", city)
       .where("state", "==", state)
+      .where("city", "==", city)
       .where("time", ">", new firebase.firestore.Timestamp(
         time.seconds - 300,
         time.nanoseconds
@@ -208,118 +133,85 @@ async function submitIncident() {
       .get();
 
     if (!dupes.empty) {
-      clearTimeout(timeout);
-      modalMsg.innerText =
-        "Similar incident already reported here recently.";
-      showToast("Duplicate incident detected", "warning");
+      modalMsg.innerText = "Similar incident already reported recently";
+      showToast("Duplicate detected", "warning");
       return;
     }
 
-    // TEMP: SKIP MEDIA (THIS IS YOUR MAIN BLOCKER)
-    let mediaURL = null;
-
-    /*
-    if (file) {
-      const ref = storage.ref(`media/${Date.now()}_${file.name}`);
-      await ref.put(file);
-      mediaURL = await ref.getDownloadURL();
-    }
-    */
-
-    // FIRESTORE WRITE
     await db.collection("incidents").add({
       type,
       desc,
       state,
       city,
       address,
-      media: mediaURL,
+      media: null, // media disabled until storage rules added
       time,
       status: "Pending",
       verified: "Not Verified",
       uid: auth.currentUser.uid
     });
 
-    clearTimeout(timeout);
-    modalMsg.innerText = "Submitted successfully";
+    modalMsg.innerText = "Submitted";
     showToast("Incident reported", "success");
 
-    setTimeout(() => {
-      closeModal();
-    }, 600);
+    setTimeout(closeModal, 600);
 
   } catch (err) {
-    clearTimeout(timeout);
-    console.error("SUBMIT FAILED:", err);
+    console.error(err);
     modalMsg.innerText = "Submission failed";
     showToast("Submission failed", "error");
   }
 }
 
-/*********************************************************
- * REALTIME LISTENERS — USER
- *********************************************************/
+/**************************************************
+ * USER LISTENER
+ **************************************************/
 function listenUser() {
   db.collection("incidents")
     .orderBy("time", "desc")
     .onSnapshot(snapshot => {
-      let total = 0;
-      let resolved = 0;
-
-      userTable.innerHTML = "";
+      const tbody = document.getElementById("userTable");
+      tbody.innerHTML = "";
 
       snapshot.forEach(doc => {
-        const i = doc.data();
-        total++;
-        if (i.status === "Resolved") resolved++;
-
-        userTable.innerHTML += `
+        const d = doc.data();
+        tbody.innerHTML += `
           <tr>
-            <td>${i.type}</td>
-            <td>${i.desc}</td>
-            <td>${i.location}</td>
-            <td>${i.media ? `<button onclick="viewMedia('${i.media}')">View</button>` : "-"}</td>
-            <td>${new Date(i.time).toLocaleString()}</td>
-            <td><span class="badge pending">${i.status}</span></td>
-            <td><span class="badge notverified">${i.verified}</span></td>
+            <td>${d.type}</td>
+            <td>${d.desc}</td>
+            <td>
+              ${d.city}
+              <span class="dots" onclick="showLocation('${d.address}, ${d.city}, ${d.state}')">⋮</span>
+            </td>
+            <td>${new Date(d.time.seconds * 1000).toLocaleString()}</td>
+            <td><span class="badge pending">${d.status}</span></td>
+            <td><span class="badge red">${d.verified}</span></td>
           </tr>
         `;
       });
-
-      totalCases.innerText = total;
-      resolvedCases.innerText = resolved;
     });
 }
 
-/*********************************************************
- * REALTIME LISTENERS — ADMIN
- *********************************************************/
+/**************************************************
+ * ADMIN LISTENER
+ **************************************************/
 function listenAdmin() {
   db.collection("incidents")
     .orderBy("time", "desc")
     .onSnapshot(snapshot => {
-      adminTable.innerHTML = "";
+      const tbody = document.getElementById("adminTable");
+      tbody.innerHTML = "";
 
       snapshot.forEach(doc => {
-        const i = doc.data();
-
-        adminTable.innerHTML += `
+        const d = doc.data();
+        tbody.innerHTML += `
           <tr>
-            <td>${i.type}</td>
-            <td>${i.desc}</td>
-            <td>${i.location}</td>
-            <td>${i.media ? `<button onclick="viewMedia('${i.media}')">View</button>` : "-"}</td>
-            <td>${new Date(i.time).toLocaleString()}</td>
+            <td>${d.type}</td>
+            <td>${d.city}</td>
             <td>
-              <select onchange="updateStatus('${doc.id}', this.value)">
-                <option ${i.status === "Pending" ? "selected" : ""}>Pending</option>
-                <option ${i.status === "Resolved" ? "selected" : ""}>Resolved</option>
-              </select>
-            </td>
-            <td>
-              <select onchange="updateVerified('${doc.id}', this.value)">
-                <option ${i.verified === "Not Verified" ? "selected" : ""}>Not Verified</option>
-                <option ${i.verified === "Verified" ? "selected" : ""}>Verified</option>
+              <select onchange="verifyIncident('${doc.id}', this.value)">
+                <option ${d.verified==="Not Verified"?"selected":""}>Not Verified</option>
+                <option ${d.verified==="Verified"?"selected":""}>Verified</option>
               </select>
             </td>
           </tr>
@@ -328,44 +220,57 @@ function listenAdmin() {
     });
 }
 
-/*********************************************************
- * ADMIN ACTIONS
- *********************************************************/
-function updateStatus(id, value) {
-  db.collection("incidents").doc(id).update({ status: value });
-}
-
-function updateVerified(id, value) {
+function verifyIncident(id, value) {
   db.collection("incidents").doc(id).update({ verified: value });
+  showToast("Verification updated", "success");
 }
 
-/*********************************************************
- * MEDIA VIEWER
- *********************************************************/
-function viewMedia(url) {
-  viewer.style.display = "flex";
-  viewerBody.innerHTML = url.endsWith(".mp4")
-    ? `<video src="${url}" controls></video>`
-    : `<img src="${url}" style="max-width:100%">`;
+/**************************************************
+ * UI HELPERS
+ **************************************************/
+function showLocation(text) {
+  showToast(text, "info", 4000);
 }
 
-function closeViewer() {
-  viewer.style.display = "none";
+function openModal() {
+  document.getElementById("modal").classList.add("show");
 }
 
-/*********************************************************
- * LOGOUT
- *********************************************************/
-function logout() {
-  auth.signOut().then(() => {
-    window.location.href = "index.html";
-  });
+function closeModal() {
+  document.getElementById("modal").classList.remove("show");
+  modalMsg.innerText = "";
 }
 
+/**************************************************
+ * HERO TYPING (5s HOLD)
+ **************************************************/
+function startHeroTyping() {
+  const el = document.getElementById("heroText");
+  const text = "Saw an incident? Report now for fast-track solution";
+  let i = 0;
 
+  function type() {
+    if (i < text.length) {
+      el.innerText += text.charAt(i++);
+      setTimeout(type, 70);
+    } else {
+      setTimeout(() => {
+        el.innerText = "";
+        i = 0;
+        type();
+      }, 5000);
+    }
+  }
+  type();
+}
 
-
-
-
-
-
+/**************************************************
+ * TOAST SYSTEM
+ **************************************************/
+function showToast(msg, type="info", time=2500) {
+  const t = document.createElement("div");
+  t.className = `toast ${type}`;
+  t.innerText = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), time);
+}
