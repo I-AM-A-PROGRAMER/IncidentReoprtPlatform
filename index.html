@@ -4,60 +4,69 @@
   <meta charset="UTF-8" />
   <title>Incident Platform | Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 
-<body data-page="login">
-  <div class="auth-page">
-    <div class="auth-card">
-      <h1 class="title">Incident Platform</h1>
-      <p class="subtitle">Real-time incident reporting</p>
+<body class="auth-page">
 
-      <div class="tab-switch">
-        <button id="loginTab" class="active">Login</button>
-        <button id="signupTab">Signup</button>
-      </div>
+  <div class="auth-card">
+    <h1>Incident Platform</h1>
+    <p class="subtitle">Real-time incident reporting</p>
 
-      <!-- EMAIL -->
-      <input
-        type="email"
-        id="email"
-        placeholder="Email"
-        autocomplete="email"
-      />
-
-      <!-- PASSWORD -->
-      <input
-        type="password"
-        id="password"
-        placeholder="Password"
-        autocomplete="current-password"
-      />
-
-      <!-- LOGIN -->
-      <button id="loginBtn" class="primary-btn">Login</button>
-
-      <!-- SIGNUP -->
-      <button id="signupBtn" class="secondary-btn hidden">
-        Create Account
-      </button>
-
-      <div class="divider">OR</div>
-
-      <!-- GOOGLE SIGN IN -->
-      <button id="googleBtn" class="google-btn">
-        Continue with Google
-      </button>
-
-      <div id="authMsg" class="auth-msg"></div>
+    <div class="auth-tabs">
+      <button id="loginTab" class="active">Login</button>
+      <button id="signupTab">Signup</button>
     </div>
+
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button id="authBtn" class="primary-btn">Login</button>
+
+    <div class="divider">OR</div>
+
+    <button id="googleBtn" class="google-btn">
+      Continue with Google
+    </button>
+
+    <p id="authMsg" class="auth-msg"></p>
   </div>
 
+  <!-- App Logic -->
   <script src="app.js"></script>
+
+  <script>
+    /* ---------- UI TOGGLE ---------- */
+    const loginTab = document.getElementById("loginTab");
+    const signupTab = document.getElementById("signupTab");
+    const authBtn = document.getElementById("authBtn");
+
+    let mode = "login";
+
+    loginTab.onclick = () => {
+      mode = "login";
+      loginTab.classList.add("active");
+      signupTab.classList.remove("active");
+      authBtn.innerText = "Login";
+    };
+
+    signupTab.onclick = () => {
+      mode = "signup";
+      signupTab.classList.add("active");
+      loginTab.classList.remove("active");
+      authBtn.innerText = "Signup";
+    };
+
+    /* ---------- AUTH HANDLERS ---------- */
+    authBtn.onclick = () => handleEmailAuth(mode);
+    document.getElementById("googleBtn").onclick = googleLogin;
+  </script>
+
 </body>
 </html>
