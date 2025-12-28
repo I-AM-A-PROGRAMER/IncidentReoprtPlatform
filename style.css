@@ -1,260 +1,238 @@
-/* ================= RESET ================= */
+/* =========================
+   RESET & GLOBAL
+========================= */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ================= BASE ================= */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #020617;
-  color: #ffffff;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f1c4d, #6a1fbf);
+  color: #fff;
+  overflow-x: hidden;
 }
 
-/* ================= BACKGROUNDS ================= */
-.login-bg,
-.bg {
+/* =========================
+   AUTH BACKGROUND
+========================= */
+.auth-bg {
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, #1e3a8a, transparent 60%),
-    radial-gradient(circle at 80% 70%, #7c3aed, transparent 60%);
-  animation: bgMove 20s ease-in-out infinite alternate;
+  background: radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 255, 255, 0.06),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(255, 255, 255, 0.05),
+      transparent 40%
+    );
+  animation: bgMove 12s ease-in-out infinite alternate;
   z-index: -1;
 }
 
 @keyframes bgMove {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(20deg); }
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
 }
 
-/* ================= LOGIN ================= */
-.login-wrapper {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* =========================
+   AUTH CARD
+========================= */
+.auth-card {
+  width: 360px;
+  max-width: 92%;
+  background: rgba(10, 15, 40, 0.88);
+  backdrop-filter: blur(16px);
+  border-radius: 18px;
+  padding: 28px 24px 26px;
+  margin: auto;
+  margin-top: 10vh;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+  animation: fadeInUp 0.6s ease;
 }
 
-.login-card {
-  width: 420px;
-  padding: 32px;
-  border-radius: 20px;
-  background: rgba(2, 6, 23, 0.85);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.login-card h1 {
+/* =========================
+   TEXT
+========================= */
+.app-title {
   text-align: center;
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
-.subtitle {
+.app-subtitle {
   text-align: center;
-  font-size: 14px;
-  color: #94a3b8;
-  margin-bottom: 20px;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin-bottom: 18px;
+  min-height: 18px;
 }
 
-/* Tabs */
-.login-tabs {
+/* =========================
+   TABS
+========================= */
+.auth-tabs {
   display: flex;
-  background: #020617;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 999px;
-  margin-bottom: 20px;
+  padding: 4px;
+  margin-bottom: 18px;
 }
 
 .tab {
   flex: 1;
-  padding: 10px;
-  background: transparent;
   border: none;
-  color: #94a3b8;
+  background: transparent;
+  color: #bbb;
+  font-size: 0.85rem;
+  padding: 8px 0;
   cursor: pointer;
-  font-weight: 600;
+  border-radius: 999px;
+  transition: all 0.25s ease;
 }
 
 .tab.active {
-  background: #2563eb;
-  color: white;
-  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
 }
 
-/* Forms */
-.form-container {
-  position: relative;
-  height: 260px;
+/* =========================
+   FORMS
+========================= */
+.auth-form {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  animation: formFade 0.4s ease;
 }
 
-.form {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: translateY(10px);
-  pointer-events: none;
-  transition: all 0.4s ease;
+.auth-form.active {
+  display: flex;
 }
 
-.form.active {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+@keyframes formFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-input, textarea, select {
-  width: 100%;
-  padding: 12px;
-  margin-top: 12px;
-  border-radius: 8px;
+.auth-form input {
+  padding: 11px 12px;
+  border-radius: 10px;
   border: none;
   outline: none;
+  font-size: 0.85rem;
+  background: #fff;
+  color: #000;
 }
 
-/* Buttons */
-.btn {
-  width: 100%;
-  padding: 12px;
-  margin-top: 16px;
+/* =========================
+   BUTTONS
+========================= */
+.primary-btn {
+  margin-top: 4px;
+  padding: 11px;
+  border-radius: 12px;
   border: none;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.primary {
-  background: #2563eb;
-  color: white;
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.6);
 }
 
-.google {
+.google-btn {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
   background: #dc2626;
-  color: white;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.or {
+.google-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+/* =========================
+   DIVIDER
+========================= */
+.divider {
   text-align: center;
-  margin: 14px 0;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin: 6px 0;
 }
 
-.msg {
-  margin-top: 12px;
-  font-size: 13px;
-  color: #facc15;
+/* =========================
+   AUTH MESSAGE
+========================= */
+.auth-message {
   text-align: center;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  min-height: 16px;
+  opacity: 0.9;
 }
 
-/* ================= DASHBOARD ================= */
-.dashboard {
-  min-height: 100vh;
-}
-
-.hidden {
-  display: none !important;
-}
-
-.topbar {
-  padding: 16px 24px;
+/* =========================
+   DASHBOARD BASICS
+========================= */
+header {
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.topbar.admin {
-  background: rgba(220,38,38,0.15);
-}
-
-.logout {
-  background: #dc2626;
-  color: white;
+.logout-btn {
+  background: #b91c1c;
   border: none;
   padding: 8px 14px;
+  color: #fff;
   border-radius: 8px;
   cursor: pointer;
 }
 
-.hero {
-  margin: 30px;
-  padding: 40px;
-  border-radius: 20px;
-  background: rgba(0,0,0,0.4);
-  text-align: center;
-}
-
-.stats {
-  display: flex;
-  gap: 20px;
-  margin: 0 30px;
-}
-
-.stat {
-  flex: 1;
-  background: rgba(0,0,0,0.4);
-  padding: 20px;
-  border-radius: 16px;
-  text-align: center;
-}
-
-.table-card {
-  margin: 30px;
-  background: rgba(0,0,0,0.5);
-  border-radius: 16px;
-  padding: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  text-align: left;
-}
-
-/* Badges */
-.badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-.pending {
-  background: #facc15;
-  color: black;
-}
-
-.resolved {
-  background: #22c55e;
-  color: black;
-}
-
-.verified {
-  background: #22c55e;
-  color: black;
-}
-
-.notverified {
-  background: #ef4444;
-  color: white;
-}
-
-/* ================= MODALS ================= */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  background: #020617;
-  padding: 30px;
-  border-radius: 16px;
-  width: 420px;
+/* =========================
+   UTILS
+========================= */
+.hidden {
+  display: none !important;
 }
