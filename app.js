@@ -10,123 +10,170 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-
-// ================= ADMIN =================
 const ADMIN_EMAILS = [
   "supriyo3606c@gmail.com",
   "pushkarrajbad@gmail.com"
 ];
 
-// ================= PAGE DETECT =================
-const page = document.body.dataset.page;
 
-// ================= AUTH STATE =================
+/***********************
+  PAGE DETECTION
+************************/
+const isLoginPage = document.body.dataset.page === "login";
+const isDashboardPage = document.body.dataset.page === "dashboard";
+
+/***********************
+  TOAST
+************************/
+function showToast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.innerText = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+/***********************
+  AUTH STATE
+************************/
 auth.onAuthStateChanged(user => {
-  if (!user) {
-    if (page === "dashboard") location.href = "index.html";
-    return;
+  if (isLoginPage && user) {
+    window.location.href = "dashboard.html";
   }
 
-  if (page === "login") {
-    location.href = "dashboard.html";
-    return;
+  if (isDashboardPage && !user) {
+    window.location.href = "index.html";
   }
 
-  if (page === "dashboard") {
+  if (isDashboardPage && user) {
     initDashboard(user);
   }
 });
 
-// ================= LOGIN =================
-async function login() {
-  const email = loginEmail.value;
-  const password = loginPassword.value;
-  await auth.signInWithEmailAndPassword(email, password);
+/***********************
+  LOGIN / SIGNUP
+************************/
+if (isLoginPage) {
+  window.login = () => {
+    const email = emailInput.value;
+    const pass = passwordInput.value;
+    auth.signInWithEmailAndPassword(email, pass)
+      .catch(e => showToast(e.message));
+  };
+
+  window.signup = () => {
+    const email = emailInput.value;
+    const pass = passwordInput.value;
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then(() => showToast("Account created"))
+      .catch(e => showToast(e.message));
+  };
+
+  window.googleLogin = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .catch(e => showToast(e.message));
+  };
 }
 
-async function signup() {
-  const email = signupEmail.value;
-  const password = signupPassword.value;
-  await auth.createUserWithEmailAndPassword(email, password);
+/***********************
+  HERO TYPING
+************************/
+function startHeroTyping() {
+  const hero = document.getElementById("heroText");
+  if (!hero) return;
+
+  const text = "Saw an incident? Report now for fast-track solution";
+  let i = 0;
+
+  function type() {
+    if (i <= text.length) {
+      hero.innerText = text.slice(0, i++);
+      setTimeout(type, 60);
+    } else {
+      setTimeout(() => {
+        i = 0;
+        hero.innerText = "";
+        type();
+      }, 5000);
+    }
+  }
+  type();
 }
 
-async function googleLogin() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  await auth.signInWithPopup(provider);
-}
-
-function logout() {
-  auth.signOut();
-}
-
-// ================= DASHBOARD =================
+/***********************
+  DASHBOARD INIT
+************************/
 function initDashboard(user) {
   document.getElementById("userName").innerText =
-    "Hi, " + user.email.split("@")[0];
+    "Hi, " + (user.email.split("@")[0]);
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
-
   if (isAdmin) {
-    document.getElementById("adminBadge").style.display = "block";
+    document.getElementById("adminPanel").classList.remove("hidden");
   }
 
+  startHeroTyping();
   listenIncidents(isAdmin);
 }
 
-// ================= INCIDENT SUBMIT =================
-async function submitIncident() {
+/***********************
+  LOGOUT
+************************/
+window.logout = () => auth.signOut();
+
+/***********************
+  MODAL
+************************/
+window.openModal = () =>
+  document.getElementById("incidentModal").classList.remove("hidden");
+
+window.closeModal = () =>
+  document.getElementById("incidentModal").classList.add("hidden");
+
+/***********************
+  SUBMIT INCIDENT
+************************/
+window.submitIncident = async () => {
   const type = incidentType.value;
   const desc = incidentDesc.value.trim();
   const state = incidentState.value;
   const city = incidentCity.value.trim();
-  const address = incidentAddress.value.trim();
+  const area = incidentArea.value.trim();
   const file = incidentFile.files[0];
 
-  if (!desc || !city || !state) {
-    toast("Fill all required fields", "error");
+  if (!desc || !city || !area) {
+    showToast("Fill all required fields");
     return;
   }
 
-  const fileName = file ? file.name : null;
-
-  const now = Date.now();
-
-  // Duplicate check (same city + type in 5 min)
-  const dupes = await db.collection("incidents")
-    .where("type", "==", type)
-    .where("city", "==", city)
-    .where("time", ">", now - 5 * 60 * 1000)
-    .get();
-
-  if (!dupes.empty) {
-    toast("Similar incident already reported", "warning");
-    return;
-  }
+  const fakeMedia = file ? file.name : null;
 
   await db.collection("incidents").add({
     type,
     desc,
     state,
     city,
-    address,
-    fileName,
-    time: now,
+    area,
+    media: fakeMedia,
     status: "Pending",
     verified: false,
-    duplicate: false,
-    createdBy: auth.currentUser.email
+    time: Date.now()
   });
 
-  toast("Incident reported successfully", "success");
+  showToast("Incident submitted");
   closeModal();
-}
+};
 
-// ================= LISTEN INCIDENTS =================
+/***********************
+  LIST INCIDENTS
+************************/
 function listenIncidents(isAdmin) {
   db.collection("incidents")
     .orderBy("time", "desc")
     .onSnapshot(snap => {
-      userTable.innerHTML = "";
+      const table = document.getElementById("incidentTable");
+      table.innerHTML = "";
 
       snap.forEach(doc => {
         const d = doc.data();
@@ -136,52 +183,36 @@ function listenIncidents(isAdmin) {
           <td>${d.type}</td>
           <td>${d.desc}</td>
           <td>${d.city}</td>
-          <td>${d.fileName || "—"}</td>
+          <td>${d.media || "-"}</td>
           <td>${new Date(d.time).toLocaleString()}</td>
-          <td>${d.status}</td>
-          <td>${d.verified ? "Verified" : "Not Verified"}</td>
+          <td><span class="badge pending">${d.status}</span></td>
+          <td>${d.verified ? "Yes" : "No"}</td>
         `;
 
         if (isAdmin) {
-          const adminTd = document.createElement("td");
-          adminTd.innerHTML = `
-            <button onclick="verify('${doc.id}', true)">✔</button>
+          const actions = document.createElement("td");
+          actions.innerHTML = `
+            <button onclick="verify('${doc.id}')">Verify</button>
             <button onclick="resolve('${doc.id}')">Resolve</button>
-            <button onclick="markDuplicate('${doc.id}')">Duplicate</button>
-            <button onclick="removeIncident('${doc.id}')">Delete</button>
+            <button onclick="remove('${doc.id}')">Delete</button>
           `;
-          tr.appendChild(adminTd);
+          tr.appendChild(actions);
         }
 
-        userTable.appendChild(tr);
+        table.appendChild(tr);
       });
     });
 }
 
-// ================= ADMIN ACTIONS =================
-function verify(id, val) {
-  db.collection("incidents").doc(id).update({ verified: val });
-}
+/***********************
+  ADMIN ACTIONS
+************************/
+window.verify = id =>
+  db.collection("incidents").doc(id).update({ verified: true });
 
-function resolve(id) {
+window.resolve = id =>
   db.collection("incidents").doc(id).update({ status: "Resolved" });
-}
 
-function markDuplicate(id) {
-  db.collection("incidents").doc(id).update({ duplicate: true });
-}
+window.remove = id =>
+  db.collection("incidents").doc(id).delete();
 
-function removeIncident(id) {
-  if (confirm("Delete this report?")) {
-    db.collection("incidents").doc(id).delete();
-  }
-}
-
-// ================= TOAST =================
-function toast(msg, type = "info") {
-  const t = document.createElement("div");
-  t.className = `toast ${type}`;
-  t.innerText = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
