@@ -2,162 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Incident Platform | Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <title>Incident Platform</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 
-<body class="dashboard-page">
+<body data-page="dashboard">
 
-  <!-- Top Bar -->
-  <header class="top-bar">
-    <span id="userGreeting">Hi, User</span>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </header>
+<!-- Toast -->
+<div id="toast" class="toast"></div>
 
-  <!-- HERO CARD -->
-  <section class="card hero-card">
-    <h2 id="heroText">Saw an incident?</h2>
-    <p>Report now for fast-track resolution</p>
+<!-- Header -->
+<header class="topbar">
+  <div class="left">Hi, <span id="userName">User</span></div>
+  <button id="logoutBtn" class="logout">Logout</button>
+</header>
 
-    <!-- USER ONLY -->
-    <button
-      id="reportBtn"
-      class="primary-btn"
-      onclick="openReportModal()">
-      Report Incident
-    </button>
-  </section>
+<!-- HERO CARD -->
+<section class="hero-card">
+  <h1 id="heroText"></h1>
+  <button id="openModalBtn" class="primary-btn">Report Incident</button>
+</section>
 
-  <!-- USER INCIDENTS -->
-  <section id="userSection" class="card">
-    <h3>Your & Nearby Incidents</h3>
+<!-- USER INCIDENTS -->
+<section class="card">
+  <h2>Your & Nearby Incidents</h2>
 
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Description</th>
-            <th>City</th>
-            <th>Media</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Verified</th>
-          </tr>
-        </thead>
-        <tbody id="userIncidents"></tbody>
-      </table>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+        <th>City</th>
+        <th>Media</th>
+        <th>Time</th>
+        <th>Status</th>
+        <th>Verified</th>
+      </tr>
+    </thead>
+    <tbody id="userTable"></tbody>
+  </table>
+</section>
+
+<!-- ADMIN SECTION -->
+<section id="adminSection" class="card hidden">
+  <h2>Admin Controls</h2>
+
+  <!-- Analytics -->
+  <div class="analytics">
+    <div class="stat">
+      <span id="totalCount">0</span>
+      <p>Total Reports</p>
     </div>
-  </section>
-
-  <!-- ADMIN DASHBOARD -->
-  <section id="adminSection" class="card hidden">
-
-    <h3>Admin Controls</h3>
-
-    <!-- ANALYTICS -->
-    <div class="analytics-grid">
-      <div class="stat-card">
-        <h4>Total Reports</h4>
-        <span id="totalReports">0</span>
-      </div>
-      <div class="stat-card">
-        <h4>Active</h4>
-        <span id="activeReports">0</span>
-      </div>
-      <div class="stat-card">
-        <h4>Resolved</h4>
-        <span id="resolvedReports">0</span>
-      </div>
+    <div class="stat">
+      <span id="openCount">0</span>
+      <p>Open</p>
     </div>
-
-    <!-- FILTERS -->
-    <div class="filters">
-      <select id="filterStatus">
-        <option value="">All Status</option>
-        <option value="Pending">Pending</option>
-        <option value="Resolved">Resolved</option>
-      </select>
-
-      <select id="filterType">
-        <option value="">All Types</option>
-        <option>Fire</option>
-        <option>Accident</option>
-        <option>Infrastructure</option>
-      </select>
-
-      <button onclick="applyAdminFilters()">Apply</button>
-    </div>
-
-    <!-- ADMIN TABLE -->
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>City</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Verified</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="adminIncidents"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-  <!-- REPORT MODAL (USER ONLY) -->
-  <div id="reportModal" class="modal hidden">
-    <div class="modal-card">
-      <h3>Report Incident</h3>
-
-      <select id="incidentType">
-        <option>Fire</option>
-        <option>Accident</option>
-        <option>Infrastructure</option>
-      </select>
-
-      <textarea
-        id="incidentDesc"
-        placeholder="Describe the incident"></textarea>
-
-      <select id="incidentState">
-        <option>Odisha</option>
-        <option>Delhi</option>
-        <option>Maharashtra</option>
-        <option>Karnataka</option>
-      </select>
-
-      <input id="incidentCity" placeholder="City" />
-      <input id="incidentAddress" placeholder="Exact location" />
-
-      <!-- Dummy file input -->
-      <input type="file" id="incidentFile" />
-
-      <p id="fileName"></p>
-
-      <div class="modal-actions">
-        <button class="primary-btn" onclick="submitIncident()">Submit</button>
-        <button onclick="closeReportModal()">Cancel</button>
-      </div>
-
-      <p id="modalMsg"></p>
+    <div class="stat">
+      <span id="resolvedCount">0</span>
+      <p>Resolved</p>
     </div>
   </div>
 
-  <!-- App Logic -->
-  <script src="app.js"></script>
+  <!-- Admin Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Type</th>
+        <th>City</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="adminTable"></tbody>
+  </table>
+</section>
 
+<!-- REPORT MODAL -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Report Incident</h3>
+
+    <select id="incidentType">
+      <option>Accident</option>
+      <option>Fire</option>
+      <option>Infrastructure</option>
+      <option>Medical</option>
+    </select>
+
+    <textarea id="incidentDesc" placeholder="Describe the incident"></textarea>
+
+    <select id="incidentState">
+      <option>Odisha</option>
+      <option>Delhi</option>
+      <option>Maharashtra</option>
+      <option>Karnataka</option>
+      <option>Tamil Nadu</option>
+      <option>West Bengal</option>
+    </select>
+
+    <input id="incidentCity" placeholder="City" />
+    <input id="incidentAddress" placeholder="Exact Address" />
+
+    <input type="file" id="incidentFile" />
+
+    <div class="modal-actions">
+      <button id="submitIncident" class="primary-btn">Submit</button>
+      <button id="closeModal" class="secondary-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS -->
+<script src="app.js"></script>
 </body>
 </html>
