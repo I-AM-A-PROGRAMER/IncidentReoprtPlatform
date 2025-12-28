@@ -20,7 +20,8 @@ const storage = firebase.storage();
  * ADMIN CONFIG
  *********************************************************/
 const ADMIN_EMAILS = [
-  "supriyo3606c@gmail.com"
+  "supriyo3606c@gmail.com",
+  "pushkarrajbad@gmail.com"
 ];
 
 /*********************************************************
@@ -351,6 +352,7 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
 
 
 
